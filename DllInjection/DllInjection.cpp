@@ -37,14 +37,14 @@ int _tmain(int argc, _TCHAR* argv[])
 		return -1;
 	}
 
-	Context.ContextFlags = CONTEXT_CONTROL;
+	Context.ContextFlags = CONTEXT_INTEGER;
 	if (!GetThreadContext(PI.hThread, &Context))
 	{
 		_tprintf_s(TEXT("GetThreadContext failed: %d\n"), GetLastError());
 		return -1;
 	}
 
-	CHAR szDllName[] = "injection.dll";
+	CHAR szDllName[] = "Injection.dll";
 	CHAR szShellCode[] = "\x60\x68\x12\x34\x56\x78\xb8\x12\x34\x56\x78\xff\xd0\x61\xe9\x12\x34\x56\x78";
 
 	Buffer = VirtualAllocEx(PI.hProcess, NULL, sizeof(SHELL_CODE), MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
@@ -56,7 +56,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	*(DWORD*)(szShellCode + 2) = (DWORD)Buffer;
 	*(DWORD*)(szShellCode + 7) = (DWORD)LoadLibraryA;
-	*(DWORD*)(szShellCode + 15) = Context.Eip - (DWORD)((PUCHAR)Buffer + FIELD_OFFSET(SHELL_CODE, szInstruction) + sizeof(szShellCode) - 1);
+	*(DWORD*)(szShellCode + 15) = Context.Eax - (DWORD)((PUCHAR)Buffer + FIELD_OFFSET(SHELL_CODE, szInstruction) + sizeof(szShellCode) - 1);
 
 	SHELL_CODE ShellCode;
 	CopyMemory(((PSHELL_CODE)&ShellCode)->szPath, szDllName, sizeof(szDllName));
