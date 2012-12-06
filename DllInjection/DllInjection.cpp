@@ -3,7 +3,9 @@
 
 #include "stdafx.h"
 #include <Windows.h>
+#include <Shlwapi.h>
 
+#pragma comment(lib, "Shlwapi.lib")
 
 typedef struct _SHELL_CODE
 {
@@ -17,10 +19,19 @@ int _tmain(int argc, _TCHAR* argv[])
 	PROCESS_INFORMATION PI = {0};
 	CONTEXT Context = {0};
 	LPVOID Buffer = NULL;
+	TCHAR ApplicationName[MAX_PATH] = {0};
+	TCHAR CurrentDirectory[MAX_PATH] = {0};
 
+	CopyMemory(ApplicationName, argv[1], sizeof(WCHAR) * (lstrlen(argv[1]) + 1));
+	CopyMemory(CurrentDirectory, argv[1], sizeof(WCHAR) * (lstrlen(argv[1]) + 1));
+	if (!PathRemoveFileSpec(CurrentDirectory))
+	{
+		_tprintf_s(TEXT("PathRemoveFileSpec failed: %d\n"), GetLastError());
+		return -1;
+	}
 
 	SI.cb = sizeof(SI);
-	if (!CreateProcess(argv[1], NULL, NULL, NULL, FALSE, CREATE_SUSPENDED, NULL, NULL, &SI,	&PI))
+	if (!CreateProcess(ApplicationName, NULL, NULL, NULL, FALSE, CREATE_SUSPENDED, NULL, CurrentDirectory, &SI,	&PI))
 	{
 		_tprintf_s(TEXT("CreateProcess failed: %d\n"), GetLastError());
 		return -1;
@@ -58,7 +69,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		return -1;
 	}
 	
-	Context.Eip = (DWORD)(((PSHELL_CODE)Buffer)->szInstruction);
+	Context.Eax = (DWORD)(((PSHELL_CODE)Buffer)->szInstruction);
 
 	if (!SetThreadContext(PI.hThread, &Context))
 	{
